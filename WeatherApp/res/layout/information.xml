@@ -9,11 +9,11 @@
     android:id="@+id/main_layout"
     tools:context=".MainActivity" >
 
-    <ImageView
+    <TextView
         android:id="@+id/imageView1"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:contentDescription="Mirai Nikki"
+		android:text="Yuno Gasai from the amazing anime Mirai Nikki "
         android:src="@drawable/splash" />
     
 
