@@ -70,12 +70,15 @@ public class ForcastListAdapter extends ArrayAdapter<Forcast>{
 	        if (tempNightView != null) {
 	        	tempNightView.setText("night: " + tempNight);
 	        }
-	        
+	        check if rainy then set image
+	        make the decimal places of weather smaller
         }
 		
         return v;
 	}
-	private double convertKelvinToFahrenheit(double kelvinTemp){
-		return 9/(5 * (kelvinTemp - 273) + 32);
+	private double convertKelvinToFahrenheit(double kelvin){
+		double celsius = kelvin - 273.0;
+		double fahrenheit = (celsius * 9.0/5.0) + 32.0;
+		return fahrenheit;
 	}
 }
