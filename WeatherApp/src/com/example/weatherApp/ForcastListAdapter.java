@@ -4,6 +4,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 
+import com.example.weatherApp.forcast.CityForcast;
 import com.example.weatherApp.forcast.Forcast;
 
 import android.content.Context;
@@ -11,6 +12,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 public class ForcastListAdapter extends ArrayAdapter<Forcast>{
@@ -40,6 +42,7 @@ public class ForcastListAdapter extends ArrayAdapter<Forcast>{
 			TextView tempDayView = (TextView) v.findViewById(R.id.temp_day_view);
 			TextView tempEveView = (TextView) v.findViewById(R.id.temp_eve_view);
 			TextView tempNightView = (TextView) v.findViewById(R.id.temp_night_view);
+			ImageView imageView = (ImageView) v.findViewById(R.id.image_view);
 			
 			String dateAsText = new SimpleDateFormat("dd/MM/yyyy").format(new Date(p.dt * 1000L));
 			double tempMin = convertKelvinToFahrenheit(p.temp.min);
@@ -53,25 +56,34 @@ public class ForcastListAdapter extends ArrayAdapter<Forcast>{
 				dateView.setText(dateAsText);
 	        }
 			if (tempMinView != null) {
-				tempMinView.setText("min: " + tempMin);
+				tempMinView.setText("min: " + String.format( "%.2f", tempMin ));
 	        }
 			if (tempMaxView != null) {
-	        	tempMaxView.setText("max: " + tempMax);
+	        	tempMaxView.setText("max: " + String.format( "%.2f", tempMax ));
 	        }
 	        if (tempMornView != null) {
-	        	tempMornView.setText("morn: " + tempMorn);
+	        	tempMornView.setText("morn: " + String.format( "%.2f", tempMorn ));
 	        }
 	        if (tempDayView != null) {
-	        	tempDayView.setText("day: " + tempDay);
+	        	tempDayView.setText("day: " + String.format( "%.2f", tempDay ));
 	        }
 	        if (tempEveView != null) {
-	        	tempEveView.setText("eve: " + tempEve);
+	        	tempEveView.setText("eve: " + String.format( "%.2f", tempEve ));
 	        }
 	        if (tempNightView != null) {
-	        	tempNightView.setText("night: " + tempNight);
+	        	tempNightView.setText("night: " + String.format( "%.2f", tempNight ));
 	        }
-	        check if rainy then set image
-	        make the decimal places of weather smaller
+	        if (imageView != null){
+	        	if (p.weathers.get(0).main.equals("Rain")){
+	        		imageView.setImageResource(R.drawable.rain);
+	        	}
+	        	else if (p.weathers.get(0).main.equals("Clear")){
+	        		imageView.setImageResource(R.drawable.sunny);
+	        	}
+	        	else {
+	        		imageView.setImageResource(R.drawable.cloudy);
+	        	}
+	        }
         }
 		
         return v;

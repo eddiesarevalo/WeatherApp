@@ -73,12 +73,11 @@
                       android:layout_weight="1" 
                       android:height="20sp" />
 	</TableRow>
-    <TextView android:layout_height="wrap_content"
+    <ImageView android:layout_height="wrap_content"
                       android:layout_width="fill_parent" 
                       android:layout_weight="1"
                       android:textColor="#000000"
                       android:gravity="right"
                       android:id="@+id/image_view"
-                      android:text="image" 
                       android:height="20sp" />
 </TableLayout>
