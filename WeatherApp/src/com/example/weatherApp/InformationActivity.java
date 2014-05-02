@@ -6,7 +6,9 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
+import com.example.weatherApp.currentWeather.CurrentWeather;
 import com.example.weatherApp.forcast.CityForcast;
+import com.example.weatherApp.util.CurrentWeatherJsonReader;
 import com.example.weatherApp.util.jsonReader;
 
 import android.net.ConnectivityManager;
@@ -27,10 +29,14 @@ public class InformationActivity extends Activity implements GestureDetector.OnG
     private static final int SWIPE_MAX_OFF_PATH = 50;
     private static final int SWIPE_THRESHOLD_VELOCITY = 200;
 	private static final String DEBUG_TAG = "Gestures";
+	//currentWeatherURL = "http://api.openweathermap.org/data/2.5/weather?lat=35&lon=139";
+	//weatherForcastURL = "http://api.openweathermap.org/data/2.5/forecast/daily?lat=35&lon=139&cnt=10&mode=json";
 	private GestureDetectorCompat mDetector;
 	TextView cityNameView;
 	CityForcast cityForcast;
+	CurrentWeather currentWeather;
 	ListView forcastListView;
+	
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -123,7 +129,8 @@ public class InformationActivity extends Activity implements GestureDetector.OnG
             int len = 500;
                 
             try {
-                URL url = new URL("http://api.openweathermap.org/data/2.5/forecast/daily?lat=35&lon=139&cnt=10&mode=json");
+            	String weatherForcastURL = "http://api.openweathermap.org/data/2.5/forecast/daily?lat=35&lon=139&cnt=10&mode=json";
+                URL url = new URL(weatherForcastURL);
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                 conn.setReadTimeout(10000 /* milliseconds */);
                 conn.setConnectTimeout(15000 /* milliseconds */);
@@ -172,6 +179,63 @@ public class InformationActivity extends Activity implements GestureDetector.OnG
                 	Log.i("MCITYFORCASTForcast", "forcast" + i + ": rain"+ cityForcast.forcasts.get(i).rain);
                 }
                 */
+            // Makes sure that the InputStream is closed after the app is
+            // finished using it.
+            } finally {
+                if (is != null) {
+                    is.close();
+                } 
+            }
+            
+            try {
+            	String currentWeatherURL = "http://api.openweathermap.org/data/2.5/weather?lat=35&lon=139";
+                //URL url = new URL("http://api.openweathermap.org/data/2.5/forecast/daily?lat=35&lon=139&cnt=10&mode=json");
+            	URL url = new URL(currentWeatherURL);
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                conn.setReadTimeout(10000 /* milliseconds */);
+                conn.setConnectTimeout(15000 /* milliseconds */);
+                conn.setRequestMethod("GET");
+                conn.setDoInput(true);
+                // Starts the query
+                conn.connect();
+                int response = conn.getResponseCode();
+                Log.d("DEBUG_TAG", "The response is: " + response);
+                is = conn.getInputStream();
+
+                // Convert the InputStream into a string
+               /* String contentAsString = readIt(is, len);*/
+                //return contentAsString;
+                
+               CurrentWeatherJsonReader currentWeatherJsonReader = new CurrentWeatherJsonReader();
+                currentWeather = currentWeatherJsonReader.readJsonStream(is);
+                
+                /*Log.i("CURRENTWEATHER", "currentWeather/coord/lon:" + currentWeather.coord.lon);
+                Log.i("CURRENTWEATHER", "currentWeather/coord/lat:" + currentWeather.coord.lat);
+                Log.i("CURRENTWEATHER", "currentWeather/sys/message:" + currentWeather.sys.message);
+                Log.i("CURRENTWEATHER", "currentWeather/sys/country:" + currentWeather.sys.country);
+                Log.i("CURRENTWEATHER", "currentWeather/sys/sunrise:" + currentWeather.sys.sunrise);
+                Log.i("CURRENTWEATHER", "currentWeather/sys/sunset:" + currentWeather.sys.sunset);
+                Log.i("CURRENTWEATHER", "currentWeather/weather/id:" + currentWeather.weathers.get(0).id);
+                Log.i("CURRENTWEATHER", "currentWeather/weather/main:" + currentWeather.weathers.get(0).main);
+                Log.i("CURRENTWEATHER", "currentWeather/weather/description:" + currentWeather.weathers.get(0).description);
+                Log.i("CURRENTWEATHER", "currentWeather/weather/icon:" + currentWeather.weathers.get(0).icon);
+                Log.i("CURRENTWEATHER", "currentWeather/base:" + currentWeather.base);
+                Log.i("CURRENTWEATHER", "currentWeather/main/temp:" + currentWeather.wMain.temp);
+                Log.i("CURRENTWEATHER", "currentWeather/main/temp_min:" + currentWeather.wMain.tempMin);
+                Log.i("CURRENTWEATHER", "currentWeather/main/temp_max:" + currentWeather.wMain.tempMax);
+                Log.i("CURRENTWEATHER", "currentWeather/main/pressure:" + currentWeather.wMain.pressure);
+                Log.i("CURRENTWEATHER", "currentWeather/main/seaLevel:" + currentWeather.wMain.seaLevel);
+                Log.i("CURRENTWEATHER", "currentWeather/main/grndLevel:" + currentWeather.wMain.grndLevel);
+                Log.i("CURRENTWEATHER", "currentWeather/main/humidity:" + currentWeather.wMain.humidity);
+                Log.i("CURRENTWEATHER", "currentWeather/wind/speed:" + currentWeather.wind.speed);
+                Log.i("CURRENTWEATHER", "currentWeather/wind/deg:" + currentWeather.wind.deg);
+                Log.i("CURRENTWEATHER", "currentWeather/clouds/all:" + currentWeather.clouds.all);
+                Log.i("CURRENTWEATHER", "currentWeather/dt:" + currentWeather.dt);
+                Log.i("CURRENTWEATHER", "currentWeather/id:" + currentWeather.id);
+                Log.i("CURRENTWEATHER", "currentWeather/name:" + currentWeather.name);
+                Log.i("CURRENTWEATHER", "currentWeather/cod:" + currentWeather.cod);*/
+                
+                
             // Makes sure that the InputStream is closed after the app is
             // finished using it.
             } finally {
