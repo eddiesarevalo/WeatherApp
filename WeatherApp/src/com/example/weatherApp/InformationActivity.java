@@ -10,7 +10,13 @@ import com.example.weatherApp.currentWeather.CurrentWeather;
 import com.example.weatherApp.forcast.CityForcast;
 import com.example.weatherApp.util.CurrentWeatherJsonReader;
 import com.example.weatherApp.util.jsonReader;
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.GooglePlayServicesClient;
+import com.google.android.gms.location.LocationClient;
+import com.google.android.gms.location.LocationListener;
+import com.google.android.gms.location.LocationRequest;
 
+import android.location.Location;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.AsyncTask;
@@ -21,14 +27,20 @@ import android.support.v4.view.GestureDetectorCompat;
 import android.util.Log;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
+import android.widget.ImageView;
 import android.widget.ListAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
-public class InformationActivity extends Activity implements GestureDetector.OnGestureListener{
+import android.widget.Toast;
+public class InformationActivity extends Activity implements GestureDetector.OnGestureListener,GooglePlayServicesClient.ConnectionCallbacks, GooglePlayServicesClient.OnConnectionFailedListener, LocationListener{
 	private static final int SWIPE_MIN_DISTANCE = 50;
     private static final int SWIPE_MAX_OFF_PATH = 50;
     private static final int SWIPE_THRESHOLD_VELOCITY = 200;
 	private static final String DEBUG_TAG = "Gestures";
+	final int FASTEST_INTERVAL = 1;
+	final int UPDATE_INTERVAL = 500;
+	LocationClient mLocationClient;
+	LocationRequest mLocationRequest;
 	//currentWeatherURL = "http://api.openweathermap.org/data/2.5/weather?lat=35&lon=139";
 	//weatherForcastURL = "http://api.openweathermap.org/data/2.5/forecast/daily?lat=35&lon=139&cnt=10&mode=json";
 	private GestureDetectorCompat mDetector;
@@ -36,6 +48,11 @@ public class InformationActivity extends Activity implements GestureDetector.OnG
 	CityForcast cityForcast;
 	CurrentWeather currentWeather;
 	ListView forcastListView;
+	TextView currentTempTextView;
+	TextView currentDescriptionTextView;
+	ImageView currentImageView;
+	String currentLon;
+	String currentLat;
 	
 	
 	@Override
@@ -46,6 +63,17 @@ public class InformationActivity extends Activity implements GestureDetector.OnG
 		mDetector = new GestureDetectorCompat(this, this);
 		cityNameView = (TextView)findViewById(R.id.city_name);
 		forcastListView = (ListView) findViewById(R.id.forcast_list);
+		
+		currentTempTextView = (TextView)findViewById(R.id.current_temp);
+		currentDescriptionTextView = (TextView)findViewById(R.id.current_description);
+		currentImageView = (ImageView) findViewById(R.id.current_image_view);
+		
+		mLocationClient = new LocationClient(this, this, this);
+		
+		mLocationRequest  = new LocationRequest();
+		mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+		mLocationRequest.setInterval(UPDATE_INTERVAL);
+		mLocationRequest.setFastestInterval(FASTEST_INTERVAL);
 
         ConnectivityManager connMgr = (ConnectivityManager) getApplicationContext().getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkInfo networkInfo = connMgr.getActiveNetworkInfo();
@@ -111,6 +139,79 @@ public class InformationActivity extends Activity implements GestureDetector.OnG
 		return false;
 	}
 
+	@Override
+	protected void onStart(){
+		super.onStart();
+		
+		mLocationClient.connect();
+		
+	}
+	
+	@Override
+	protected void onStop(){
+		mLocationClient.disconnect();
+		super.onStop();
+	}
+	
+	@Override
+	public void onLocationChanged(Location location) {
+		// TODO Auto-generated method stub
+		//currentTempTextView.setText(String.valueOf(location.getLatitude()));
+		//currentDescriptionTextView.setText(String.valueOf(location.getLongitude()));
+		if (currentWeather != null && cityForcast != null){
+			cityNameView.setText("Country: " + cityForcast.city.country + " city:" + cityForcast.city.name);
+        	ForcastListAdapter customAdapter = new ForcastListAdapter(getApplicationContext(), R.layout.forcast_list_row, cityForcast.forcasts);
+        	forcastListView .setAdapter(customAdapter);
+        	currentTempTextView.setText("F:" + String.format( "%.2f", convertKelvinToFahrenheit(currentWeather.wMain.temp)));
+        	currentDescriptionTextView.setText("Desc: " + String.valueOf(currentWeather.weathers.get(0).description));
+        	
+        	if (currentWeather.weathers.get(0).main.equals("Rain")){
+        		currentImageView.setImageResource(R.drawable.rain);
+        	}
+        	else if (currentWeather.weathers.get(0).main.equals("Clear")){
+        		currentImageView.setImageResource(R.drawable.sunny);
+        	}
+        	else {
+        		currentImageView.setImageResource(R.drawable.cloudy);
+        	}
+		}
+		mLocationClient.removeLocationUpdates(this);
+	}
+
+	@Override
+	public void onConnectionFailed(ConnectionResult result) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void onConnected(Bundle connectionHint) {
+		// Toast.makeText(this, "Connected", Toast.LENGTH_SHORT).show();
+		 
+		 Location location = mLocationClient.getLastLocation();
+		 if (location == null)
+			 mLocationClient.requestLocationUpdates(mLocationRequest, this);
+		 else{
+			 Toast.makeText(this, "Location: " + location.getLatitude() + ", " + location.getLongitude(), Toast.LENGTH_SHORT).show();
+			 /*currentTempTextView.setText(String.valueOf(location.getLatitude()));
+			 currentDescriptionTextView.setText(String.valueOf(location.getLongitude()));*/
+			 currentLat = String.valueOf(location.getLatitude());
+			 currentLon = String.valueOf(location.getLongitude());
+		 }
+		
+	}
+
+	@Override
+	public void onDisconnected() {
+	}
+	
+	
+	
+	
+	
+	
+	
+	
 	private class DownloadWebpageTask extends AsyncTask<Void, Void, Void> {
         @Override
 		protected Void doInBackground(Void... params) {
@@ -124,12 +225,18 @@ public class InformationActivity extends Activity implements GestureDetector.OnG
        
         private void downloadUrl() throws IOException {
             InputStream is = null;
-            // Only display the first 500 characters of the retrieved
-            // web page content.
-            int len = 500;
-                
+            
+            	while (currentLat == null && currentLon == null){
+            		try {
+            	        Thread.sleep(5);         
+            	    } catch (InterruptedException e) {
+            	       e.printStackTrace();
+            	    }
+            	}
+                Log.i("BEFORE FORCAST", currentLat + " " + currentLon);
             try {
-            	String weatherForcastURL = "http://api.openweathermap.org/data/2.5/forecast/daily?lat=35&lon=139&cnt=10&mode=json";
+            	//String weatherForcastURL = "http://api.openweathermap.org/data/2.5/forecast/daily?lat=35&lon=139&cnt=10&mode=json";
+            	String weatherForcastURL = "http://api.openweathermap.org/data/2.5/forecast/daily?lat=" + currentLat + "&lon=" + currentLon + "&cnt=10&mode=json";
                 URL url = new URL(weatherForcastURL);
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                 conn.setReadTimeout(10000 /* milliseconds */);
@@ -141,10 +248,8 @@ public class InformationActivity extends Activity implements GestureDetector.OnG
                 int response = conn.getResponseCode();
                 Log.d("DEBUG_TAG", "The response is: " + response);
                 is = conn.getInputStream();
-
-                // Convert the InputStream into a string
-               /* String contentAsString = readIt(is, len);*/
-                //return contentAsString;
+                
+                
                 jsonReader jreader = new jsonReader();
                 cityForcast = jreader.readJsonStream(is);
                 
@@ -177,8 +282,8 @@ public class InformationActivity extends Activity implements GestureDetector.OnG
                 	Log.i("MCITYFORCASTForcast", "forcast" + i + ": deg"+ cityForcast.forcasts.get(i).deg);
                 	Log.i("MCITYFORCASTForcast", "forcast" + i + ": clouds"+ cityForcast.forcasts.get(i).clouds);
                 	Log.i("MCITYFORCASTForcast", "forcast" + i + ": rain"+ cityForcast.forcasts.get(i).rain);
-                }
-                */
+                }*/
+                
             // Makes sure that the InputStream is closed after the app is
             // finished using it.
             } finally {
@@ -188,8 +293,9 @@ public class InformationActivity extends Activity implements GestureDetector.OnG
             }
             
             try {
-            	String currentWeatherURL = "http://api.openweathermap.org/data/2.5/weather?lat=35&lon=139";
+            	//String currentWeatherURL = "http://api.openweathermap.org/data/2.5/weather?lat=35&lon=139";
                 //URL url = new URL("http://api.openweathermap.org/data/2.5/forecast/daily?lat=35&lon=139&cnt=10&mode=json");
+            	String currentWeatherURL = "http://api.openweathermap.org/data/2.5/weather?lat=" + currentLat + "&lon=" + currentLon;
             	URL url = new URL(currentWeatherURL);
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                 conn.setReadTimeout(10000 /* milliseconds */);
@@ -202,9 +308,7 @@ public class InformationActivity extends Activity implements GestureDetector.OnG
                 Log.d("DEBUG_TAG", "The response is: " + response);
                 is = conn.getInputStream();
 
-                // Convert the InputStream into a string
-               /* String contentAsString = readIt(is, len);*/
-                //return contentAsString;
+                
                 
                CurrentWeatherJsonReader currentWeatherJsonReader = new CurrentWeatherJsonReader();
                 currentWeather = currentWeatherJsonReader.readJsonStream(is);
@@ -250,8 +354,25 @@ public class InformationActivity extends Activity implements GestureDetector.OnG
         	cityNameView.setText("Country: " + cityForcast.city.country + " city:" + cityForcast.city.name);
         	ForcastListAdapter customAdapter = new ForcastListAdapter(getApplicationContext(), R.layout.forcast_list_row, cityForcast.forcasts);
         	forcastListView .setAdapter(customAdapter);
+        	currentTempTextView.setText("F:" + String.format( "%.2f", convertKelvinToFahrenheit(currentWeather.wMain.temp)));
+			currentDescriptionTextView.setText("Desc: " + String.valueOf(currentWeather.weathers.get(0).description));
+			
+			if (currentWeather.weathers.get(0).main.equals("Rain")){
+        		currentImageView.setImageResource(R.drawable.rain);
+        	}
+        	else if (currentWeather.weathers.get(0).main.equals("Clear")){
+        		currentImageView.setImageResource(R.drawable.sunny);
+        	}
+        	else {
+        		currentImageView.setImageResource(R.drawable.cloudy);
+        	}
         }
     }
+	private double convertKelvinToFahrenheit(double kelvin){
+		double celsius = kelvin - 273.0;
+		double fahrenheit = (celsius * 9.0/5.0) + 32.0;
+		return fahrenheit;
+	}
 
 
 }
